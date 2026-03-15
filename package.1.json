@@ -1,0 +1,15 @@
+{
+  "name": "engse207-set2-monitor-prototype",
+  "version": "0.7.0",
+  "private": true,
+  "description": "React + Node.js prototype for ENGSE207 Set 2 monitor (Phase 7 audit log workflow)",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  }
+}

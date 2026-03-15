@@ -1,0 +1,15 @@
+{
+  "name": "engse207-set2-monitor-final-usable",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Final usable ENGSE207 Set 2 monitor with public board, student workspace, teacher dashboard, SQLite, SSE, and Railway-ready config",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1"
+  }
+}
