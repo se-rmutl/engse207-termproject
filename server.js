@@ -20,7 +20,7 @@ const FRONTEND_HEALTH_MARKER = 'frontend-ok';
 fs.mkdirSync(DATA_DIR, { recursive: true });
 
 function removeIfExists(filePath) {
-  try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch {}
+  try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch { }
 }
 
 function resetDatabaseIfRequested() {
@@ -148,7 +148,7 @@ function markSchemaVersion() {
       INSERT INTO app_meta (key, value) VALUES ('last_migration_at', ?)
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
     `).run(new Date().toISOString());
-  } catch {}
+  } catch { }
 }
 markSchemaVersion();
 
@@ -229,7 +229,7 @@ function seedGroupsAndAccounts() {
     }
   });
 
-    const tx2 = db.transaction(() => {
+  const tx2 = db.transaction(() => {
     for (const sec of ['sec2']) {
       for (let i = 1; i <= 12; i += 1) {
         const groupCode = `group${String(i).padStart(2, '0')}`;
@@ -250,6 +250,11 @@ function seedGroupsAndAccounts() {
 
   tx();
   tx2();
+
+  console.log('DATA_DIR =', DATA_DIR);
+  console.log('DB_FILE =', DB_FILE);
+  console.log('RESET_DB =', RESET_DB);
+  console.log('RAILWAY_VOLUME_MOUNT_PATH =', process.env.RAILWAY_VOLUME_MOUNT_PATH);
 }
 
 seedTeacher();
@@ -685,7 +690,7 @@ function httpCheck(kind, targetUrl) {
         const contentType = String(resp.headers['content-type'] || '').toLowerCase();
         const headerMarker = String(resp.headers[FRONTEND_HEALTH_HEADER] || '').toLowerCase();
         let parsedJson = null;
-        try { parsedJson = JSON.parse(body || '{}'); } catch {}
+        try { parsedJson = JSON.parse(body || '{}'); } catch { }
 
         if (isLocalMockHealth(parsed)) {
           const ok = statusCode >= 200 && statusCode < 400 && parsedJson && String(parsedJson.status || '').toLowerCase() === 'ok';
@@ -742,17 +747,17 @@ async function checkAllGroups() {
   runtime.checkerRunning = true;
   let checked = 0;
   for (const id of ids) {
-    try { await checkGroupHealth(id); checked += 1; } catch {}
+    try { await checkGroupHealth(id); checked += 1; } catch { }
   }
   runtime.checkerRunning = false;
   runtime.checkerLastRunAt = nowIso();
   runtime.checkerLastSummary = { checked, okGroups: getAllGroups('teacher').filter((g) => g.servicesOk >= 3).length, stale: 0 };
   broadcastMeta();
 }
-setInterval(() => { if (runtime.checkerEnabled) checkAllGroups().catch(() => {}); }, AUTO_CHECK_MS).unref();
+setInterval(() => { if (runtime.checkerEnabled) checkAllGroups().catch(() => { }); }, AUTO_CHECK_MS).unref();
 
 function writeCsv(groups) {
-  const headers = ['id','section','groupCode','groupName','startState','memberCount','urlsCount','docsCount','repoCount','studentStatus','teacherStatus','systemScore','docsScore','interviewScore','bonusScore','readiness','set1RepoUrl','set2RepoUrl','frontendUrl','authUrl','taskUrl','userUrl'];
+  const headers = ['id', 'section', 'groupCode', 'groupName', 'startState', 'memberCount', 'urlsCount', 'docsCount', 'repoCount', 'studentStatus', 'teacherStatus', 'systemScore', 'docsScore', 'interviewScore', 'bonusScore', 'readiness', 'set1RepoUrl', 'set2RepoUrl', 'frontendUrl', 'authUrl', 'taskUrl', 'userUrl'];
   const esc = (v) => {
     const s = String(v ?? '');
     return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -801,8 +806,8 @@ function serveStatic(req, res, pathname) {
     const ext = path.extname(filePath).toLowerCase();
     const type = ext === '.html' ? 'text/html; charset=utf-8'
       : ext === '.js' ? 'application/javascript; charset=utf-8'
-      : ext === '.css' ? 'text/css; charset=utf-8'
-      : 'application/octet-stream';
+        : ext === '.css' ? 'text/css; charset=utf-8'
+          : 'application/octet-stream';
     const extraHeaders = (rel === '/' || rel === '/index.html') ? { [FRONTEND_HEALTH_HEADER]: FRONTEND_HEALTH_MARKER } : {};
     res.writeHead(200, { 'Content-Type': type, ...extraHeaders });
     res.end(buf);
