@@ -91,7 +91,7 @@ function SummaryCards({ groups, meta, streamState }) {
     <div className="panel">
       <div className="panel-head">
         <div>
-          <h2>ภาพรวม Final Set 2</h2>
+          <h2>ภาพรวม Final Lab Set 2</h2>
           <div className="sub">teacher dashboard</div>
         </div>
         <div className="meta-strip">
