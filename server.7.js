@@ -11,32 +11,11 @@ const DATA_DIR = process.env.DATA_DIR || process.env.RAILWAY_VOLUME_MOUNT_PATH |
 const DB_FILE = path.join(DATA_DIR, 'monitor.sqlite');
 const AUTO_CHECK_MS = Number(process.env.AUTO_CHECK_MS || 60000);
 const SESSION_TTL_MS = Number(process.env.SESSION_TTL_MS || 8 * 60 * 60 * 1000);
-const RESET_DB = /^(1|true|yes)$/i.test(String(process.env.RESET_DB || ''));
-const RESET_DB_BACKUP = !/^(0|false|no)$/i.test(String(process.env.RESET_DB_BACKUP || 'true'));
 const MOCK_HEALTH_PATH = '/mock/health';
 const FRONTEND_HEALTH_HEADER = 'x-engse207-frontend';
 const FRONTEND_HEALTH_MARKER = 'frontend-ok';
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
-
-function removeIfExists(filePath) {
-  try { if (fs.existsSync(filePath)) fs.unlinkSync(filePath); } catch {}
-}
-
-function resetDatabaseIfRequested() {
-  if (!RESET_DB) return;
-  if (fs.existsSync(DB_FILE) && RESET_DB_BACKUP) {
-    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupFile = path.join(DATA_DIR, `monitor.backup.${stamp}.sqlite`);
-    fs.copyFileSync(DB_FILE, backupFile);
-  }
-  removeIfExists(DB_FILE);
-  removeIfExists(`${DB_FILE}-wal`);
-  removeIfExists(`${DB_FILE}-shm`);
-}
-
-resetDatabaseIfRequested();
-
 const db = new Database(DB_FILE);
 db.pragma('journal_mode = WAL');
 
@@ -50,7 +29,7 @@ function clampInt(v, min, max) {
   return Math.max(min, Math.min(max, Math.round(n)));
 }
 
-function migrateSchemaSafely() {
+function createSchema() {
   db.exec(`
   CREATE TABLE IF NOT EXISTS groups (
     id TEXT PRIMARY KEY,
@@ -136,21 +115,7 @@ function migrateSchemaSafely() {
   ensure('set1_repo_url', 'set1_repo_url TEXT DEFAULT ""');
   ensure('set2_repo_url', 'set2_repo_url TEXT DEFAULT ""');
 }
-migrateSchemaSafely();
-
-function markSchemaVersion() {
-  try {
-    db.prepare(`
-      INSERT INTO app_meta (key, value) VALUES ('schema_version', '1')
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    `).run();
-    db.prepare(`
-      INSERT INTO app_meta (key, value) VALUES ('last_migration_at', ?)
-      ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    `).run(new Date().toISOString());
-  } catch {}
-}
-markSchemaVersion();
+createSchema();
 
 const runtime = {
   checkerEnabled: true,
@@ -212,7 +177,7 @@ function seedGroupsAndAccounts() {
   `);
   const tx = db.transaction(() => {
     for (const sec of ['sec1']) {
-      for (let i = 1; i <= 18; i += 1) {
+      for (let i = 1; i <= 17; i += 1) {
         const groupCode = `group${String(i).padStart(2, '0')}`;
         const id = `${sec}-${groupCode}`;
         const groupName = `${sec.toUpperCase()} ${groupCode.toUpperCase()}`;

@@ -211,8 +211,8 @@ function seedGroupsAndAccounts() {
     )
   `);
   const tx = db.transaction(() => {
-    for (const sec of ['sec1']) {
-      for (let i = 1; i <= 18; i += 1) {
+    for (const sec of ['sec1', 'sec2']) {
+      for (let i = 1; i <= 20; i += 1) {
         const groupCode = `group${String(i).padStart(2, '0')}`;
         const id = `${sec}-${groupCode}`;
         const groupName = `${sec.toUpperCase()} ${groupCode.toUpperCase()}`;
@@ -228,28 +228,7 @@ function seedGroupsAndAccounts() {
       }
     }
   });
-
-    const tx2 = db.transaction(() => {
-    for (const sec of ['sec2']) {
-      for (let i = 1; i <= 12; i += 1) {
-        const groupCode = `group${String(i).padStart(2, '0')}`;
-        const id = `${sec}-${groupCode}`;
-        const groupName = `${sec.toUpperCase()} ${groupCode.toUpperCase()}`;
-        insertGroup.run({ id, section: sec, group_code: groupCode, group_name: groupName, updated_at: now });
-        upsertAccount.run({
-          username: id,
-          password_hash: hashPassword(`${groupCode}pass`),
-          group_id: id,
-          created_at: now,
-          updated_at: now
-        });
-        fixDefaultName.run({ id, group_name: groupName });
-      }
-    }
-  });
-
   tx();
-  tx2();
 }
 
 seedTeacher();
