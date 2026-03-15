@@ -52,8 +52,8 @@ function emptyMembers() { return [{ studentId: '', fullName: '' }, { studentId: 
 function mockHealthUrl() { return `${window.location.origin}/mock/health`; }
 
 function LoginScreen({ onLogin, loading, message }) {
-  const [username, setUsername] = useState('teacher');
-  const [password, setPassword] = useState('teacher123');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   return (
     <div className="login-shell">
       <div className="login-card panel">
@@ -68,7 +68,6 @@ function LoginScreen({ onLogin, loading, message }) {
           <button className="primary">{loading ? 'กำลังเข้าสู่ระบบ...' : 'เข้าสู่ระบบ'}</button>
           {message ? <div className="login-note error">{message}</div> : null}
           <div className="login-note">
-            <b>อาจารย์:</b> teacher / teacher123<br />
             <b>ตัวอย่างกลุ่ม:</b> sec1-group01 / group01pass
           </div>
           <div className="footer-actions" style={{justifyContent:'center'}}>
