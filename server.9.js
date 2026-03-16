@@ -663,13 +663,10 @@ function isRepoHost(hostname) {
   const host = String(hostname || '').toLowerCase();
   return host.includes('github.com') || host.includes('raw.githubusercontent.com') || host.includes('gitlab.com') || host.includes('bitbucket.org');
 }
-function isMonitorMockHealth(parsed) {
-  return !!parsed && parsed.pathname === MOCK_HEALTH_PATH;
-}
-function isMonitorMockPayload(parsedJson) {
-  return !!parsedJson
-    && String(parsedJson.status || '').toLowerCase() === 'ok'
-    && String(parsedJson.marker || '') === 'engse207-monitor-mock';
+function isLocalMockHealth(parsed) {
+  if (!parsed) return false;
+  const hostOk = ['localhost', '127.0.0.1'].includes(String(parsed.hostname || '').toLowerCase());
+  return hostOk && Number(parsed.port || (parsed.protocol === 'https:' ? 443 : 80)) === PORT && parsed.pathname === MOCK_HEALTH_PATH;
 }
 function httpCheck(kind, targetUrl) {
   return new Promise((resolve) => {
@@ -695,8 +692,8 @@ function httpCheck(kind, targetUrl) {
         let parsedJson = null;
         try { parsedJson = JSON.parse(body || '{}'); } catch { }
 
-        if (isMonitorMockHealth(parsed)) {
-          const ok = statusCode >= 200 && statusCode < 400 && isMonitorMockPayload(parsedJson);
+        if (isLocalMockHealth(parsed)) {
+          const ok = statusCode >= 200 && statusCode < 400 && parsedJson && String(parsedJson.status || '').toLowerCase() === 'ok';
           return resolve({ ok, statusCode, label: ok ? 'MOCK OK' : 'MOCK FAIL' });
         }
 
@@ -982,7 +979,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname === '/api/me/group/submission' && req.method === 'PATCH') {
       const session = requireStudent(req);
       const body = await readBody(req);
-      const saved = mergeAndSaveGroup(session.user.groupId, {
+      const item = mergeAndSaveGroup(session.user.groupId, {
         frontend_url: String(body.frontendUrl || ''),
         auth_url: String(body.authUrl || ''),
         task_url: String(body.taskUrl || ''),
@@ -996,8 +993,7 @@ const server = http.createServer(async (req, res) => {
         student_note: String(body.studentNote || ''),
         last_student_update_at: nowIso()
       });
-      const item = await checkGroupHealth(saved.id);
-      logAudit({ actorRole: 'student', actorUsername: session.user.username, groupId: item.id, action: 'SAVE_SUBMISSION', area: 'student_submission', summary: `Student saved submission for ${item.id}`, details: { urlsCount: item.urlsCount, docsCount: item.docsCount, repoCount: item.repoCount, servicesOk: item.servicesOk, lastCheckedAt: item.lastCheckedAt } });
+      logAudit({ actorRole: 'student', actorUsername: session.user.username, groupId: item.id, action: 'SAVE_SUBMISSION', area: 'student_submission', summary: `Student saved submission for ${item.id}`, details: { urlsCount: item.urlsCount, docsCount: item.docsCount, repoCount: item.repoCount } });
       return sendJson(res, 200, { item: getGroupById(item.id, 'student') });
     }
     if (pathname === '/api/me/group/status' && req.method === 'PATCH') {
@@ -1019,11 +1015,7 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (pathname === MOCK_HEALTH_PATH && req.method === 'GET') {
-      const forwardedProto = String(req.headers['x-forwarded-proto'] || '').split(',')[0].trim();
-      const forwardedHost = String(req.headers['x-forwarded-host'] || '').split(',')[0].trim();
-      const host = forwardedHost || req.headers.host || `localhost:${PORT}`;
-      const proto = forwardedProto || 'http';
-      return sendJson(res, 200, { status: 'ok', service: 'mock-health', marker: 'engse207-monitor-mock', source: `${proto}://${host}` }, { [FRONTEND_HEALTH_HEADER]: FRONTEND_HEALTH_MARKER });
+      return sendJson(res, 200, { status: 'ok', service: 'mock-health', marker: 'engse207-monitor-mock', source: `localhost:${PORT}` }, { [FRONTEND_HEALTH_HEADER]: FRONTEND_HEALTH_MARKER });
     }
 
     return serveStatic(req, res, pathname);
