@@ -231,7 +231,7 @@ function seedGroupsAndAccounts() {
 
   const tx2 = db.transaction(() => {
     for (const sec of ['sec2']) {
-      for (let i = 1; i <= 15; i += 1) {
+      for (let i = 1; i <= 12; i += 1) {
         const groupCode = `group${String(i).padStart(2, '0')}`;
         const id = `${sec}-${groupCode}`;
         const groupName = `${sec.toUpperCase()} ${groupCode.toUpperCase()}`;
